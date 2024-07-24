@@ -25,11 +25,12 @@ def loadData():
     cursor = connection.cursor()
 
     # creating the table called "outlet_transactions" with an index column
-    df.to_sql("outlet_transactions", connection, if_exists="replace", index=True)
+    df_cleaned.to_sql("outlet_transactions", connection, if_exists="replace", index=True)
 
     connection.close()
 
 def cleanData(df):
+    df["N_TRANS"] = df["N_TRANS"].astype(int)
     try:
         return pd.to_datetime(df["DATE"], format='%Y-%m-%d')
     except ValueError:
