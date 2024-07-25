@@ -17,19 +17,21 @@ def loadData():
     print(invalid_Ntrans_count)
     print(invalid_date_count)
 
+    # cleaning the data and saving to a new csv
     df_cleaned = cleanData(df)
     df_cleaned.to_csv("for-applicants/clean_sample.csv", index=False)
 
     # creating the db and a cursor which is used to interact with the db
-    connection = sqlite3.connect("outlet_transactions.db")
-    cursor = connection.cursor()
+    connection = sqlite3.connect("for-applicants/outlet_transactions.db")
 
     # creating the table called "outlet_transactions" with an index column
-    df_cleaned.to_sql("outlet_transactions", connection, if_exists="replace", index=True)
-
+    df_cleaned.to_sql("for-applicants/outlet_transactions", connection, if_exists="replace", index=True)
+    
     connection.close()
 
+
 def cleanData(df):
+    # converting n_trans column to ints as some are doubles. It should only be whole numbers anyway
     df["N_TRANS"] = df["N_TRANS"].astype(int)
     try:
         return pd.to_datetime(df["DATE"], format='%Y-%m-%d')
@@ -43,27 +45,24 @@ def cleanData(df):
             if len(val1) <= 2:
                 #if both month and day are < 12 then its impossible to tell which one is which
                 if (int(val1) <= 12 and int(val2)) <= 12:
-                    print(index, date, 'DROP')
-                    # df.drop(index)
                     indexesToDrop.append(index)
                 # if val1 > 12 that means its the day
                 elif int(val1) > 12:
                     dateArray = [val3, val2, val1]
                     date = "-".join(dateArray)
                     df.at[index, "DATE"] = date
-                    # print(index, date)
 
                 # if val2 > 12 that means its the day 
                 elif int(val2) > 12:
                     dateArray = [val3, val1, val2]
                     date = "-".join(dateArray)
                     df.at[index, "DATE"] = date
-                    # print(index, date)
+
         df = df.drop(indexesToDrop)
         return df
                     
 
-# removes invalid dates that dont follow the year-month-day format
+# counts invalid dates that dont follow the year-month-day format
 def is_valid_date(date):
     try:
         pd.to_datetime(date, format='%Y-%m-%d')

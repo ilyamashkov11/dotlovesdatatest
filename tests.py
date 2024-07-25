@@ -6,7 +6,7 @@ def test1():
     print("test 1")
     connection = sqlite3.connect("outlet_transactions.db")
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM outlet_transactions LIMIT 1")
-    print(cursor.fetchone())
+    cursor.execute("SELECT * FROM outlet_transactions LIMIT 35")
+    print(cursor.fetchall())
 
 test1()

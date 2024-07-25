@@ -1,0 +1,29 @@
+My thinking:
+
+first I need to load the data from a csv. I know pandas library has a function that can write dataframes to a sql table so I will use it to read data from the csv and store it in a table called "outlet_transactions"
+
+when creating the table, I will add an index collumn just incase I need to keep track of the indexing in the table. 
+
+there may be some missing data so I will check all 3 columns to see if there are any NA or NULL values.
+ - there were none 
+
+ i found that there were some invalid dates that didnt follow the yyyy-mm-dd format of the rest of the data
+  - to clean i will delete all the ones where both day and month are < 12 as its impossible to tell which one is the day and which one is the month. the ones where i can tell i will make them the correct format
+
+also some of the n_trans are doubles instead of ints so I will change that too.
+
+i learned that sql has CTE's so i used a lot of those in my solution as for me its easier to visualise things in smaller "objects" - thats what I get for learning Java as my first language. 
+
+my first thinking for this sql query was to find the start and the end date for each transaction period of a shop in order. that way I would easily be able to see if there is a 30 day gap at any point between. To do this, I selected the date column as the start date, and then used a a LEAD() window function with a PARTITION BY SHOP_ID clause to get the next transaction date for the same shop_id. I set the result to be the end date and so this CTE produced a table of each transaction for each shop id with the start date and the date of the next transaction (ordered by tsart date for each shop id).
+
+now that i had a start date and end date i thought i should be able to make a CTE that calculates the open/closed status of a shop in a given period. I wasnt sure if the date column being text rather than an actual DATE would cause any issues with this but I found a JULIANDAY function which can read text in yyyy-mm--dd format as if it was a date, so I used that to calculate the date difference. I then use CASE to assign a status to a row based on the date difference. 
+
+next, I knew I would probably want to group the dates by status at some point in order to condense the "open" statuses into one row like in the required format. since I had a CTE which showed me the status of a date period i though i would also add the previous status as another column so I would be able to see the curent status and the previous rows status. this would allow me to find the end date of an "open" period for a shop. I did this in a similar way as getting the next date in the first CTE but istead I found that there is a LAG() function which would be able to get me the previous row. 
+
+then, i thought i would make a marker for when the status changes which would hopefully make grouping easier later. i did this by making a column called status_change_flag and assigned it a 1 when the current status didnt match the previous and then 0 otherwise. 
+
+from there, my idea of grouping the different dates according to the status was to assign them a group number. so all rows with the 0 status change flag get assigned group 1, then when the status change flag is encountered the grouping number is incremented. 
+
+from there i wrote a query in which i select the smallest start_date as the lower_range and the largest end_date as the upper_range, along with status and shop_id, and then group this by shop_id, status and period_group and then order by shop_id and lower_range. 
+
+my solution is not perfect and i had to do a lot of research and testing on my way to get this far. I had one major issue which I managed to fix. this was the really slow runtime of my query and this was due to me adding my own index column to the initial table. I fixed this with the line at the top of the script which greatly sped it up. some other issues that i didnt manage to fix were that the upper_range of an "open" period is the same day as the lower_range of the "closed" period, and how to determine the current date to leave a blank upper_range. 
